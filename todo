@@ -1,2 +1,27 @@
-[ ] Get scraping anime fillers website working 
+[ ] Get scraping anime fillers website working
 [ ] Build the cli tool
+
+#NOTES
+
+SCRAP_CLASS ->
+self.Manga Canon Episodes
+self.Mixed Canon/Filler Episodes
+self.Filler Episodes
+self.Anime Canon Episodes
+
+These three above are lists of ep numbers
+(example: 33, 50, 64-108, 128-137)
+
+cli ->
+-m, --manga-canon
+-M, --mixed-canon
+-f, --filler
+-a, --anime-canon
+-t, --ep-type (print ep type (filler/canon etc..))
+
+(
+-l, --list (Episodes List (TABLE))
+#(index) | Title | Type(Mixed Canon/Filler/Manga Canon/Anime Canon) | Airdate
+
+-h, --hide hide titles in list table
+)
