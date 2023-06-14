@@ -22,6 +22,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     console = Console()
 
+    if ' ' in args.anime_name:
+        args.anime_name = args.anime_name.replace(' ', '-')
+
     afl = AnimeFillerList(args.anime_name)
     afl.settings.hide_titles = args.hide
 
