@@ -5,6 +5,7 @@ class Settings:
     def __init__(self):
         self.expand = False
         self.hide_titles = False
+        self.allow_colors = True
 
 class EpisodeList:
     def __init__(self):
@@ -80,6 +81,18 @@ class AnimeFillerList:
             row_data = j.find_all('td')
             row = [i.text for i in row_data]
 
+            if self.settings.allow_colors == True:
+                ep_type = row[2]
+
+                if ep_type == "Manga Canon":
+                    color_row(row, "green")
+                elif ep_type == "Mixed Canon/Filler":
+                    color_row(row, "orange3")
+                elif ep_type == "Filler":
+                    color_row(row, "red")
+                elif ep_type == "Anime Canon":
+                    color_row(row, "cyan")
+
             self.episode_list.body.append(row)
 
 def expand_range(s: str) -> list[int]:
@@ -98,3 +111,8 @@ def expand_range(s: str) -> list[int]:
 
     return result
 
+def color_row(row, color):
+    row[0] = f"[{color}]{row[0]}[/ {color}]"
+    row[1] = f"[{color}]{row[1]}[/ {color}]"
+    row[2] = f"[{color}]{row[2]}[/ {color}]"
+    row[3] = f"[{color}]{row[3]}[/ {color}]"
