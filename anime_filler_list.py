@@ -76,7 +76,6 @@ class AnimeFillerList:
             title = i.text
             self.episode_list.headers.append(title)
 
-        # Create a for loop to fill mydata
         for j in table.find_all('tr')[1:]:
             row_data = j.find_all('td')
             row = [i.text for i in row_data]
