@@ -84,6 +84,9 @@ class AnimeFillerList:
             if self.settings.allow_colors == True:
                 ep_type = row[2]
 
+                if self.settings.hide_titles == True:
+                    row[1] = 'x'*len(row[1])
+
                 if ep_type == "Manga Canon":
                     color_row(row, "green")
                 elif ep_type == "Mixed Canon/Filler":
