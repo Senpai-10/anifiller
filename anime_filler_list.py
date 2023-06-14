@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 class Settings:
     def __init__(self):
         self.expand = False
+        self.hide_titles = False
 
 class EpisodeList:
     def __init__(self):
