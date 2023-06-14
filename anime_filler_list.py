@@ -7,6 +7,11 @@ class Settings:
         self.hide_titles = False
         self.allow_colors = True
 
+class EpisodeNumersList:
+    def __init__(self):
+        self.list = []
+        self.ranges = []
+
 class EpisodeList:
     def __init__(self):
         self.headers = []
@@ -19,10 +24,10 @@ class AnimeFillerList:
         self.__page_found = True
         self.settings = Settings()
 
-        self.manga_canon = []
-        self.mixed_canon = []
-        self.filler = []
-        self.anime_canon = []
+        self.manga_canon = EpisodeNumersList()
+        self.mixed_canon = EpisodeNumersList()
+        self.filler = EpisodeNumersList()
+        self.anime_canon = EpisodeNumersList()
 
         # Table of filler list
         #(index) | Title | Type(Mixed Canon/Filler/Manga Canon/Anime Canon) | Airdate
@@ -52,7 +57,7 @@ class AnimeFillerList:
 
         self.__episode_list(soup)
 
-    def __scrap_list_of_eps(self, soup, class_name, list):
+    def __scrap_list_of_eps(self, soup, class_name, collection: EpisodeNumersList):
         s = soup.find('div',  { 'class': class_name })
 
         content = s.find_all('a')
@@ -60,15 +65,21 @@ class AnimeFillerList:
         for child in content:
             episode = child.text
 
-            if "-" in episode and self.settings.expand == True:
-                ep_list = expand_range(episode)
-                for ep in ep_list:
-                    list.append(ep)
+            if "-" in episode:
+                collection.ranges.append(episode)
+
+                if  self.settings.expand == True:
+                    ep_list = expand_range(episode)
+                    for ep in ep_list:
+                        collection.list.append(ep)
+                    continue
+
+                collection.list.append(episode)
             else:
                 if episode.isdigit() == True:
                     episode = int(episode)
 
-                list.append(episode)
+                collection.list.append(episode)
 
     def __episode_list(self, soup):
         table = soup.find('table', { 'class': 'EpisodeList' })
@@ -98,11 +109,45 @@ class AnimeFillerList:
 
             self.episode_list.body.append(row)
 
-def expand_range(s: str) -> list[int]:
+    def check_type(self, ep):
+        # Check list
+        if ep in self.manga_canon.list: return "Manga canon"
+        elif ep in self.mixed_canon.list: return "Mixed canon"
+        elif ep in self.filler.list: return "Filler"
+        elif ep in self.anime_canon.list: return "Anime Canon"
+
+        # Check ranges
+        if check_ranges(ep, self.manga_canon.ranges) == True: return "Manga canon"
+        elif check_ranges(ep, self.mixed_canon.ranges) == True: return "Mixed canon"
+        elif check_ranges(ep, self.filler.ranges) == True: return "Filler"
+        elif check_ranges(ep, self.anime_canon.ranges) == True: return "Anime canon"
+
+    def print_list(self, list):
+        for i in list:
+            print(i)
+
+def check_ranges(ep, ranges):
+    for r in ranges:
+        start, end = map(int, r.split("-"))
+
+        if start <= ep <= end:
+            return True
+
+def get_color_by_type(ep_type):
+    if ep_type == "Manga canon":
+        return "green"
+    elif ep_type == "Mixed canon":
+        return "orange3"
+    elif ep_type == "Filler":
+        return "red"
+    elif ep_type == "Anime canon":
+        return "cyan"
+
+def expand_range(string: str) -> list[int]:
     result = []
 
-    if "-" in s:
-        start, end = s.split("-")
+    if "-" in string:
+        start, end = string.split("-")
 
         if start.isdigit() == False or end.isdigit() == False: return []
 
