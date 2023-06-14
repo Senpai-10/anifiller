@@ -5,6 +5,11 @@ class Settings:
     def __init__(self):
         self.expand = False
 
+class EpisodeList:
+    def __init__(self):
+        self.headers = []
+        self.body = []
+
 class AnimeFillerList:
     def __init__(self, anime_name) -> None:
         self.__anime_name = anime_name
@@ -19,7 +24,7 @@ class AnimeFillerList:
 
         # Table of filler list
         #(index) | Title | Type(Mixed Canon/Filler/Manga Canon/Anime Canon) | Airdate
-        # self.filler_table = []
+        self.episode_list = EpisodeList()
 
     def start(self):
         self.__scrap()
@@ -43,6 +48,8 @@ class AnimeFillerList:
         self.__scrap_list_of_eps(soup, "filler", self.filler)
         self.__scrap_list_of_eps(soup, "anime_canon", self.anime_canon)
 
+        self.__episode_list(soup)
+
     def __scrap_list_of_eps(self, soup, class_name, list):
         s = soup.find('div',  { 'class': class_name })
 
@@ -60,6 +67,20 @@ class AnimeFillerList:
                     episode = int(episode)
 
                 list.append(episode)
+
+    def __episode_list(self, soup):
+        table = soup.find('table', { 'class': 'EpisodeList' })
+
+        for i in table.find_all('th'):
+            title = i.text
+            self.episode_list.headers.append(title)
+
+        # Create a for loop to fill mydata
+        for j in table.find_all('tr')[1:]:
+            row_data = j.find_all('td')
+            row = [i.text for i in row_data]
+
+            self.episode_list.body.append(row)
 
 def expand_range(s: str) -> list[int]:
     result = []

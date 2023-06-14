@@ -1,5 +1,7 @@
-def main():
-    print("hello")
+from anime_filler_list import AnimeFillerList
 
 if __name__ == "__main__":
-    main()
+    afl = AnimeFillerList("bleach")
+    # afl.settings.expand = True
+    afl.start()
+
