@@ -1,5 +1,25 @@
 import requests as req
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
+from enum import Enum
+
+class Connection(Enum):
+    Success = 1
+    Failure = 2
+
+class EpType(Enum):
+    Manga_canon = "Manga canon"
+    Mixed_canon = "Mixed Canon/Filler"
+    Filler = "Filler"
+    Anime_canon = "Anime Canon"
+    Unknown = "Unknown"
+
+@dataclass
+class Row:
+    episode_number: int
+    title: str
+    episode_type: EpType
+    airdate: str
 
 class Settings:
     def __init__(self):
@@ -14,14 +34,13 @@ class EpisodeNumersList:
 
 class EpisodeList:
     def __init__(self):
-        self.headers = []
-        self.body = []
+        self.headers: list[str] = []
+        self.body: list[Row] = []
 
 class AnimeFillerList:
-    def __init__(self, anime_name) -> None:
+    def __init__(self, anime_name):
         self.__anime_name = anime_name
         self.__url = f"https://www.animefillerlist.com/shows/{self.__anime_name}"
-        self.__page_found = True
         self.settings = Settings()
 
         self.manga_canon = EpisodeNumersList()
@@ -33,20 +52,14 @@ class AnimeFillerList:
         #(index) | Title | Type(Mixed Canon/Filler/Manga Canon/Anime Canon) | Airdate
         self.episode_list = EpisodeList()
 
-    def start(self):
-        self.__scrap()
-        self.__check_if_page_exists()
+    def start(self) -> Connection:
+        return self.__scrap()
 
-    def __check_if_page_exists(self):
-        if self.__page_found == False:
-            print(f"'{self.__url}': Page not found!")
-
-    def __scrap(self):
+    def __scrap(self) -> Connection:
         t = req.get(self.__url)
 
         if t.status_code != 200:
-            self.__page_found = False
-            return
+            return Connection.Failure
 
         soup = BeautifulSoup(t.content, 'html.parser')
 
@@ -57,8 +70,13 @@ class AnimeFillerList:
 
         self.__episode_list(soup)
 
-    def __scrap_list_of_eps(self, soup, class_name, collection: EpisodeNumersList):
+        return Connection.Success
+
+    def __scrap_list_of_eps(self, soup, class_name: str, collection: EpisodeNumersList) -> None:
         s = soup.find('div',  { 'class': class_name })
+
+        if s == None: return None
+        assert s != None
 
         content = s.find_all('a')
 
@@ -81,7 +99,7 @@ class AnimeFillerList:
 
                 collection.list.append(episode)
 
-    def __episode_list(self, soup):
+    def __episode_list(self, soup) -> None:
         table = soup.find('table', { 'class': 'EpisodeList' })
 
         for i in table.find_all('th'):
@@ -90,58 +108,65 @@ class AnimeFillerList:
 
         for j in table.find_all('tr')[1:]:
             row_data = j.find_all('td')
-            row = [i.text for i in row_data]
+            tmp_row = [i.text for i in row_data]
+            row = Row(episode_number=tmp_row[0], title=tmp_row[1], episode_type=convert_ep_type(tmp_row[2]), airdate=tmp_row[3])
 
             if self.settings.allow_colors == True:
-                ep_type = row[2]
-
                 if self.settings.hide_titles == True:
-                    row[1] = 'x'*len(row[1])
+                    row.title = 'x'*len(row.title)
 
-                if ep_type == "Manga Canon":
-                    color_row(row, "green")
-                elif ep_type == "Mixed Canon/Filler":
-                    color_row(row, "orange3")
-                elif ep_type == "Filler":
-                    color_row(row, "red")
-                elif ep_type == "Anime Canon":
-                    color_row(row, "cyan")
+                # MAYNOT WORK! CHECK THE EPISODE_TYPE INSIDE THE FUNCTION
+                # if row.episode_type == EpType.Manga_canon:
+                #     color_row(row, "green")
+                # elif row.episode_type == EpType.Mixed_canon:
+                #     color_row(row, "orange3")
+                # elif row.episode_type == EpType.Filler:
+                #     color_row(row, "red")
+                # elif row.episode_type == EpType.Anime_canon:
+                #     color_row(row, "cyan")
 
             self.episode_list.body.append(row)
 
-    def check_type(self, ep):
+    def check_type(self, ep) -> EpType:
         # Check list
-        if ep in self.manga_canon.list: return "Manga canon"
-        elif ep in self.mixed_canon.list: return "Mixed canon"
-        elif ep in self.filler.list: return "Filler"
-        elif ep in self.anime_canon.list: return "Anime Canon"
+        if ep in self.manga_canon.list: return EpType.Manga_canon
+        elif ep in self.mixed_canon.list: return EpType.Mixed_canon
+        elif ep in self.filler.list: return EpType.Filler
+        elif ep in self.anime_canon.list: return EpType.Anime_canon
 
         # Check ranges
-        if check_ranges(ep, self.manga_canon.ranges) == True: return "Manga canon"
-        elif check_ranges(ep, self.mixed_canon.ranges) == True: return "Mixed canon"
-        elif check_ranges(ep, self.filler.ranges) == True: return "Filler"
-        elif check_ranges(ep, self.anime_canon.ranges) == True: return "Anime canon"
+        if check_ranges(ep, self.manga_canon.ranges) == True: return EpType.Manga_canon
+        elif check_ranges(ep, self.mixed_canon.ranges) == True: return EpType.Mixed_canon
+        elif check_ranges(ep, self.filler.ranges) == True: return EpType.Filler
+        elif check_ranges(ep, self.anime_canon.ranges) == True: return EpType.Anime_canon
 
-    def print_list(self, list):
+        # Can't Find ep Type
+        return EpType.Unknown
+
+    def print_list(self, list: list[str]) -> None:
         for i in list:
             print(i)
 
-def check_ranges(ep, ranges):
+def check_ranges(ep: int, ranges: list[str]):
     for r in ranges:
         start, end = map(int, r.split("-"))
 
         if start <= ep <= end:
             return True
 
-def get_color_by_type(ep_type):
-    if ep_type == "Manga canon":
-        return "green"
-    elif ep_type == "Mixed canon":
-        return "orange3"
-    elif ep_type == "Filler":
-        return "red"
-    elif ep_type == "Anime canon":
-        return "cyan"
+def get_color_by_type(ep_type: EpType) -> str:
+    result = "white"
+
+    if ep_type == EpType.Manga_canon:
+        result = "green"
+    elif ep_type == EpType.Mixed_canon:
+        result = "orange3"
+    elif ep_type == EpType.Filler:
+        result = "red"
+    elif ep_type == EpType.Anime_canon:
+        result = "cyan"
+
+    return result
 
 def expand_range(string: str) -> list[int]:
     result = []
@@ -159,8 +184,18 @@ def expand_range(string: str) -> list[int]:
 
     return result
 
-def color_row(row, color):
-    row[0] = f"[{color}]{row[0]}[/ {color}]"
-    row[1] = f"[{color}]{row[1]}[/ {color}]"
-    row[2] = f"[{color}]{row[2]}[/ {color}]"
-    row[3] = f"[{color}]{row[3]}[/ {color}]"
+def colored(color: str, v: str) -> str:
+    return f"[{color}]{v}[/ {color}]"
+
+def convert_ep_type(s: str) -> EpType:
+    if s == "Manga Canon":
+        return EpType.Manga_canon
+    elif s == "Mixed Canon/Filler":
+        return EpType.Mixed_canon
+    elif s == "Filler":
+        return EpType.Filler
+    elif s == "Anime Canon":
+        return EpType.Anime_canon
+
+    return EpType.Unknown
+
