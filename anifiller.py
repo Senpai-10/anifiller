@@ -1,5 +1,5 @@
 import argparse
-from anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
+from lib.anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
 from rich.console import Console
 from rich.table import Table
 
