@@ -141,16 +141,6 @@ class AnimeFillerList:
                 if self.settings.hide_titles == True:
                     row.title = 'x'*len(row.title)
 
-                # MAYNOT WORK! CHECK THE EPISODE_TYPE INSIDE THE FUNCTION
-                # if row.episode_type == EpType.Manga_canon:
-                #     color_row(row, "green")
-                # elif row.episode_type == EpType.Mixed_canon:
-                #     color_row(row, "orange3")
-                # elif row.episode_type == EpType.Filler:
-                #     color_row(row, "red")
-                # elif row.episode_type == EpType.Anime_canon:
-                #     color_row(row, "cyan")
-
             self.episode_list.body.append(row)
 
     def check_type(self, ep) -> EpType:
