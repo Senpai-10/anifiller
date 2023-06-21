@@ -1,9 +1,9 @@
 import argparse
-from lib.anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
+from anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
 from rich.console import Console
 from rich.table import Table
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
                 prog='anifiller',
                 description='Anime filler list cli tool.')
@@ -101,3 +101,6 @@ if __name__ == "__main__":
             table.add_row(*row)
 
         console.print(table)
+
+if __name__ == "__main__":
+    main()
