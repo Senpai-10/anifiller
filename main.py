@@ -1,5 +1,5 @@
 import argparse
-from anime_filler_list import AnimeFillerList, Connection, EpType, colored, expand_range, get_color_by_type
+from anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
 from rich.console import Console
 from rich.table import Table
 
@@ -22,14 +22,29 @@ if __name__ == "__main__":
     args = parser.parse_args()
     console = Console()
 
-    if ' ' in args.anime_name:
-        args.anime_name = args.anime_name.replace(' ', '-')
+    anime_name = args.anime_name
 
-    afl = AnimeFillerList(args.anime_name)
+    anime_name = anime_name.strip()
+
+    if ' ' in anime_name:
+        anime_name = anime_name.replace(' ', '-')
+
+    afl = AnimeFillerList(anime_name)
     afl.settings.hide_titles = args.hide
 
     if afl.start() == Connection.Failure:
-        print(f"ERROR: '{args.anime_name}' not found")
+        suggestions: list[str] = did_you_mean(anime_name)
+
+        if not len(suggestions):
+            print(f"'{anime_name}' not found")
+        else:
+            if afl.settings.allow_colors:
+                s = ", ".join(colored("cyan", str(x)) for x in suggestions)
+                console.print(f"Did you mean ({s})?")
+            else:
+                s = ", ".join(str(x) for x in suggestions)
+                print(f"Did you mean ({s})?")
+
         exit(1)
 
     if args.manga_canon == True: afl.print_list(afl.manga_canon.list)
@@ -37,7 +52,7 @@ if __name__ == "__main__":
     elif args.filler == True: afl.print_list(afl.filler.list)
     elif args.anime_canon == True: afl.print_list(afl.anime_canon.list)
     elif args.list == True:
-        table = Table(title=f"{args.anime_name.title()} Episode List")
+        table = Table(title=f"{anime_name.title()} Episode List")
 
         for header in afl.episode_list.headers:
             table.add_column(header, justify="left", no_wrap=True)

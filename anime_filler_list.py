@@ -2,6 +2,32 @@ import requests as req
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from enum import Enum
+from difflib import get_close_matches
+
+def did_you_mean(query) -> list[str]:
+    url = 'https://www.animefillerlist.com/shows'
+
+    response = req.get(url)
+
+    if response.status_code != 200:
+        return []
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    s = soup.find('div',  { 'id': 'ShowList' })
+
+    assert s != None
+
+    links = s.find_all('a', href=True)
+
+    shows: list[str] = []
+
+    for link in links:
+        show_name: str = link['href'].split('/')[-1]
+
+        shows.append(show_name)
+
+    return get_close_matches(query, shows)
 
 class Connection(Enum):
     Success = 1
