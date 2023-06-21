@@ -1,5 +1,5 @@
 import argparse
-from lib.anime_filler_list import AnimeFillerList, Connection, EpType, colored, did_you_mean, expand_range, get_color_by_type
+from lib.anime_filler_list import AnimeFillerList, EpType, colored, did_you_mean, expand_range, get_color_by_type
 from rich.console import Console
 from rich.table import Table
 
@@ -17,8 +17,6 @@ def main():
     parser.add_argument('-l', '--list', action='store_true')
     parser.add_argument('-H', '--hide', action='store_true', help="[Settings]: Hide titles in list table.")
 
-    parser.add_argument('-t', '--type', help="Check episode/s type/s, example: '--type 1 2 3 4 5-15'", action="extend", nargs="+", type=str)
-
     args = parser.parse_args()
     console = Console()
 
@@ -32,7 +30,7 @@ def main():
     afl = AnimeFillerList(anime_name)
     afl.settings.hide_titles = args.hide
 
-    if afl.start() == Connection.Failure:
+    if afl.connection_failure == True:
         suggestions: list[str] = did_you_mean(anime_name)
 
         if not len(suggestions):
@@ -47,17 +45,18 @@ def main():
 
         exit(1)
 
-    if args.manga_canon == True: afl.print_list(afl.manga_canon.list)
-    elif args.mixed_canon == True: afl.print_list(afl.mixed_canon.list)
-    elif args.filler == True: afl.print_list(afl.filler.list)
-    elif args.anime_canon == True: afl.print_list(afl.anime_canon.list)
+    if args.manga_canon == True: afl.print_list(afl.manga_canon().list)
+    elif args.mixed_canon == True: afl.print_list(afl.mixed_canon().list)
+    elif args.filler == True: afl.print_list(afl.filler().list)
+    elif args.anime_canon == True: afl.print_list(afl.anime_canon().list)
     elif args.list == True:
         table = Table(title=f"{anime_name.title()} Episode List")
+        ep_list = afl.episode_list()
 
-        for header in afl.episode_list.headers:
+        for header in ep_list.headers:
             table.add_column(header, justify="left", no_wrap=True)
 
-        for row in afl.episode_list.body:
+        for row in ep_list.body:
             if afl.settings.allow_colors == True:
                 color = get_color_by_type(row.episode_type)
 
@@ -65,40 +64,6 @@ def main():
                         colored(color, row.title), colored(color, row.episode_type.value), colored(color, row.airdate))
             else:
                 table.add_row(str(row.episode_number), row.title, row.episode_type.value, row.airdate)
-
-        console.print(table)
-
-    if args.type != None:
-        headers = ["#", "type"]
-        body = []
-
-        for ep in args.type:
-            if '-' in ep:
-                eps = expand_range(ep)
-
-                for j in eps:
-                    ep_type: EpType = afl.check_type(j)
-                    if afl.settings.allow_colors == True:
-                        color = get_color_by_type(ep_type)
-                        body.append([str(j), colored(color, ep_type.value)])
-                    else:
-                        body.append([str(j), ep_type.value])
-            else:
-                ep_type: EpType = afl.check_type(int(ep))
-
-                if afl.settings.allow_colors == True:
-                    color = get_color_by_type(ep_type)
-                    body.append([str(ep), colored(color, ep_type.value)])
-                else:
-                    body.append([str(ep), ep_type.value])
-
-        table = Table(title="Episode type list")
-
-        for header in headers:
-            table.add_column(header, justify="left", no_wrap=True)
-
-        for row in body:
-            table.add_row(*row)
 
         console.print(table)
 

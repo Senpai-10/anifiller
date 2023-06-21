@@ -29,10 +29,6 @@ def did_you_mean(query) -> list[str]:
 
     return get_close_matches(query, shows)
 
-class Connection(Enum):
-    Success = 1
-    Failure = 2
-
 class EpType(Enum):
     Manga_canon = "Manga canon"
     Mixed_canon = "Mixed Canon/Filler"
@@ -68,69 +64,64 @@ class AnimeFillerList:
         self.__anime_name = anime_name
         self.__url = f"https://www.animefillerlist.com/shows/{self.__anime_name}"
         self.settings = Settings()
-
-        self.manga_canon = EpisodeNumersList()
-        self.mixed_canon = EpisodeNumersList()
-        self.filler = EpisodeNumersList()
-        self.anime_canon = EpisodeNumersList()
-
-        # Table of filler list
-        #(index) | Title | Type(Mixed Canon/Filler/Manga Canon/Anime Canon) | Airdate
-        self.episode_list = EpisodeList()
-
-    def start(self) -> Connection:
-        return self.__scrap()
-
-    def __scrap(self) -> Connection:
+        self.connection_failure = False
         t = req.get(self.__url)
 
         if t.status_code != 200:
-            return Connection.Failure
+            self.connection_failure = True
 
-        soup = BeautifulSoup(t.content, 'html.parser')
+        self.soup = BeautifulSoup(t.content, 'html.parser')
 
-        self.__scrap_list_of_eps(soup, "manga_canon", self.manga_canon)
-        self.__scrap_list_of_eps(soup, "mixed_canon/filler", self.mixed_canon)
-        self.__scrap_list_of_eps(soup, "filler", self.filler)
-        self.__scrap_list_of_eps(soup, "anime_canon", self.anime_canon)
+    def manga_canon(self) -> EpisodeNumersList:
+        return self.__build_quick_list("manga_canon")
 
-        self.__episode_list(soup)
+    def mixed_canon(self) -> EpisodeNumersList:
+        return self.__build_quick_list("mixed_canon/filler")
 
-        return Connection.Success
+    def filler(self) -> EpisodeNumersList:
+        return self.__build_quick_list("filler")
 
-    def __scrap_list_of_eps(self, soup, class_name: str, collection: EpisodeNumersList) -> None:
-        s = soup.find('div',  { 'class': class_name })
+    def anime_canon(self) -> EpisodeNumersList:
+        return self.__build_quick_list("anime_canon")
 
-        if s == None: return None
+    def __build_quick_list(self, class_name: str) -> EpisodeNumersList:
+        s = self.soup.find('div',  { 'class': class_name })
+
         assert s != None
 
         content = s.find_all('a')
+
+        quick_list: EpisodeNumersList = EpisodeNumersList()
 
         for child in content:
             episode = child.text
 
             if "-" in episode:
-                collection.ranges.append(episode)
+                quick_list.ranges.append(episode)
 
                 if  self.settings.expand == True:
                     ep_list = expand_range(episode)
                     for ep in ep_list:
-                        collection.list.append(ep)
+                        quick_list.list.append(ep)
                     continue
 
-                collection.list.append(episode)
+                quick_list.list.append(episode)
             else:
                 if episode.isdigit() == True:
                     episode = int(episode)
 
-                collection.list.append(episode)
+                quick_list.list.append(episode)
 
-    def __episode_list(self, soup) -> None:
-        table = soup.find('table', { 'class': 'EpisodeList' })
+        return quick_list
+
+    def episode_list(self) -> EpisodeList:
+        table = self.soup.find('table', { 'class': 'EpisodeList' })
+
+        ep_list: EpisodeList = EpisodeList()
 
         for i in table.find_all('th'):
             title = i.text
-            self.episode_list.headers.append(title)
+            ep_list.headers.append(title)
 
         for j in table.find_all('tr')[1:]:
             row_data = j.find_all('td')
@@ -141,34 +132,13 @@ class AnimeFillerList:
                 if self.settings.hide_titles == True:
                     row.title = 'x'*len(row.title)
 
-            self.episode_list.body.append(row)
+            ep_list.body.append(row)
 
-    def check_type(self, ep) -> EpType:
-        # Check list
-        if ep in self.manga_canon.list: return EpType.Manga_canon
-        elif ep in self.mixed_canon.list: return EpType.Mixed_canon
-        elif ep in self.filler.list: return EpType.Filler
-        elif ep in self.anime_canon.list: return EpType.Anime_canon
-
-        # Check ranges
-        if check_ranges(ep, self.manga_canon.ranges) == True: return EpType.Manga_canon
-        elif check_ranges(ep, self.mixed_canon.ranges) == True: return EpType.Mixed_canon
-        elif check_ranges(ep, self.filler.ranges) == True: return EpType.Filler
-        elif check_ranges(ep, self.anime_canon.ranges) == True: return EpType.Anime_canon
-
-        # Can't Find ep Type
-        return EpType.Unknown
+        return ep_list
 
     def print_list(self, list: list[str]) -> None:
         for i in list:
             print(i)
-
-def check_ranges(ep: int, ranges: list[str]):
-    for r in ranges:
-        start, end = map(int, r.split("-"))
-
-        if start <= ep <= end:
-            return True
 
 def get_color_by_type(ep_type: EpType) -> str:
     result = "white"
