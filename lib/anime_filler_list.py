@@ -62,10 +62,9 @@ class EpisodeList:
 class AnimeFillerList:
     def __init__(self, anime_name):
         self.__anime_name = anime_name
-        self.__url = f"https://www.animefillerlist.com/shows/{self.__anime_name}"
         self.settings = Settings()
         self.connection_failure = False
-        t = req.get(self.__url)
+        t = req.get(f"https://www.animefillerlist.com/shows/{self.__anime_name}")
 
         if t.status_code != 200:
             self.connection_failure = True
