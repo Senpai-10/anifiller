@@ -5,6 +5,11 @@ from enum import Enum
 from difflib import get_close_matches
 
 def did_you_mean(query) -> list[str]:
+    shows = shows_list()
+
+    return get_close_matches(query, shows)
+
+def shows_list() -> list[str]:
     url = 'https://www.animefillerlist.com/shows'
 
     response = req.get(url)
@@ -27,7 +32,7 @@ def did_you_mean(query) -> list[str]:
 
         shows.append(show_name)
 
-    return get_close_matches(query, shows)
+    return shows
 
 class EpType(Enum):
     Manga_canon = "Manga canon"
